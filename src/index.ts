@@ -23,7 +23,7 @@ const database = new Pool({
 })
 
 // get promo codes for this site
-app.get('/codes', (req, res) => {
+app.get('/codesForSite', (req, res) => {
   const site = req.query.site?.toString()
 
   if (site == undefined) {
@@ -35,14 +35,14 @@ app.get('/codes', (req, res) => {
 
   query
     .then((result) => {
-      res.status(200).json(result.rows)
+      res.status(200).json({ success: true, codes: result.rows })
     })
     .catch((reason) => {
       res.status(500).send(reason)
     })
 })
 
-app.get('/code', (req, res) => {
+app.get('/codeUsageHistory', (req, res) => {
   const code = req.query.code?.toString()
   const site = req.query.site?.toString()
   if (code == undefined) {
@@ -58,7 +58,7 @@ app.get('/code', (req, res) => {
 
   query
     .then((result) => {
-      res.status(200).json(result.rows)
+      res.status(200).json({ success: true, history: result.rows })
     })
     .catch((reason) => {
       res.status(500).send(reason)
@@ -87,25 +87,26 @@ app.post('/code', (req, res) => {
   else {
     registerNewAttempt(database, code, site, time, result)
 
-    if (!succeeded(result)) {
+    if (succeeded(result)) {
+      const promoCode = getEntryForCode(database, code, site)
+
+      promoCode
+        .then((promoCodeEntry) => {
+          if (promoCodeEntry.rows.length == 0) // previously unregistered code
+            registerNewCode(database, code, site, time)
+          else // code already registered
+            updateLastSuccess(database, code, site, time)
+          res.status(200).send()
+        })
+        .catch((result) => {
+          console.log(result)
+          res.status(500).send(result)
+        })
+    }
+    else {
       res.status(200).send()
       return
     }
-
-    const promoCode = getEntryForCode(database, code, site)
-
-    promoCode
-      .then((promoCodeEntry) => {
-        if (promoCodeEntry.rows.length == 0) // previously unregistered code
-          registerNewCode(database, code, site, time)
-        else // code already registered
-          updateLastSuccess(database, code, site, time)
-        res.status(200).send()
-      })
-      .catch((result) => {
-        console.log(result)
-        res.status(500).send(result)
-      })
   }
 })
 
