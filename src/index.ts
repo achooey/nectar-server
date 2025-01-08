@@ -2,6 +2,7 @@ import express from "express"
 import { Pool } from "pg"
 import { getCodesForSite, getEntryForCode, getRecentAttemptHistory, registerNewAttempt, registerNewCode, updateLastSuccess } from "./database"
 import { isResult, succeeded } from "./types"
+import cors from 'cors'
 
 const PORT = process.env.PORT
 const HISTORY_LIMIT = process.env.HISTORY_LIMIT
@@ -10,6 +11,7 @@ const CODE_CHARACTER_LIMIT = process.env.CODE_CHARACTER_LIMIT
 const SITE_CHARACTER_LIMIT = process.env.SITE_CHARACTER_LIMIT
 
 const app = express()
+app.use(cors())
 
 const database = new Pool({
   user: process.env.PGUSER,
